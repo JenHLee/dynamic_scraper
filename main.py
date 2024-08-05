@@ -55,8 +55,10 @@ for job in jobs:
     
 file = open("jobs.csv", "w")
 writer = csv.writer(file)
+#header
 writer.writerow(["Title", "Company", "Reward", "Link"])
 
+#data - only values as a list
 for job in jobs_db:
     writer.writerow(job.values())
 
