@@ -3,13 +3,16 @@ import time
 from bs4 import BeautifulSoup
 import csv
 
-p = sync_playwright().start()
+jobs_db = []
 
-browser = p.chromium.launch(headless=False)
+keywords = ["flutter", "nextjs", "kotlin"]
 
-page = browser.new_page()
-
-page.goto("https://www.wanted.co.kr/search?query=flutter&tab=position")
+def scrape_page(url):
+    p = sync_playwright().start()
+    browser = p.chromium.launch(headless=False)
+    page = browser.new_page()
+    print(f"Scrapping {url}...")
+    page.goto(url)
 
 #page.goto("https://www.wanted.co.kr/jobsfeed")
 # time.sleep(5)
@@ -26,40 +29,44 @@ page.goto("https://www.wanted.co.kr/search?query=flutter&tab=position")
 # page.click("a#search_tab_position")
 # time.sleep(5)
 
-jobs_db = []
 
-for x in range(5):
-    time.sleep(5)
-    page.keyboard.down("End")
+    for x in range(5):
+        time.sleep(5)
+        page.keyboard.down("End")
 
-content = page.content()
+    content = page.content()
 
-p.stop()
+    p.stop()
 
-soup = BeautifulSoup(content, "html.parser")
+    soup = BeautifulSoup(content, "html.parser")
 
-jobs = soup.find_all("div", class_="JobCard_container__REty8")
+    jobs = soup.find_all("div", class_="JobCard_container__REty8")
 
-for job in jobs:
-    link = f"https://www.wanted.co.kr/{job.find('a')['href']}"
-    title = job.find("strong", class_="JobCard_title__HBpZf").text
-    company_name = job.find("span", class_="JobCard_companyName__N1YrF").text
-    reward = job.find("span", class_="JobCard_reward__cNlG5").text
-    job = {
-        "title": title,
-        "company_name" : company_name,
-        "reward" : reward,
-        "link" : link
-    }
-    jobs_db.append(job)
-    
-file = open("jobs.csv", "w")
+    for job in jobs:
+        link = f"https://www.wanted.co.kr/{job.find('a')['href']}"
+        title = job.find("strong", class_="JobCard_title__HBpZf").text
+        company_name = job.find("span", class_="JobCard_companyName__N1YrF").text
+        reward = job.find("span", class_="JobCard_reward__cNlG5").text
+        job = {
+            "title": title,
+            "company_name" : company_name,
+            "reward" : reward,
+            "link" : link
+        }
+        jobs_db.append(job)
+
+for key in keywords:
+    url =  f"https://www.wanted.co.kr/search?query={key}&tab=position"
+    scrape_page(url)
+
+# Create CSV file    
+file = open("jobs_wanted.csv", "w")
 writer = csv.writer(file)
-#header
-writer.writerow(["Title", "Company", "Reward", "Link"])
 
-#data - only values as a list
+# Header
+writer.writerow(["Title", "Company", "Reward", "URL"])
+
+# Data - only values as a list
 for job in jobs_db:
     writer.writerow(job.values())
-
-
+file.close()
